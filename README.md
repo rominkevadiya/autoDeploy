@@ -19,6 +19,7 @@ The project demonstrates how to build, test, migrate, containerize, and run a Py
 | Docker healthcheck | Complete |
 | Persistent Docker volume | Complete |
 | Continuous Integration | Complete |
+| Docker Image Publishing | Complete |
 
 ---
 
