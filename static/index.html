@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskflow | Modern Task Manager</title>
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="ri-checkbox-circle-fill"></i>
+                <h1>Taskflow</h1>
+            </div>
+            <p>Organize your work, effortlessly.</p>
+        </header>
+
+        <main>
+            <div class="glass-card add-task-card">
+                <form id="task-form">
+                    <div class="input-group">
+                        <input type="text" id="task-title" placeholder="What needs to be done?" required autocomplete="off">
+                        <input type="text" id="task-desc" placeholder="Details (optional)" autocomplete="off">
+                    </div>
+                    <button type="submit" class="primary-btn">
+                        <i class="ri-add-line"></i> Add Task
+                    </button>
+                </form>
+            </div>
+
+            <div class="tasks-container">
+                <div class="tasks-header">
+                    <h2>Your Tasks</h2>
+                    <span id="task-count" class="badge">0</span>
+                </div>
+                
+                <div id="tasks-list" class="tasks-list">
+                    <!-- Tasks will be injected here via JS -->
+                    <div class="empty-state hidden" id="empty-state">
+                        <i class="ri-inbox-line"></i>
+                        <p>No tasks yet. Add one above!</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

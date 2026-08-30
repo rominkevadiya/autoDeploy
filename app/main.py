@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from pydantic import BaseModel, ConfigDict
@@ -73,3 +74,17 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
     db.delete(db_task)
     db.commit()
     return {"ok": True}
+
+@app.patch("/tasks/{task_id}/toggle", response_model=TaskResponse)
+def toggle_task(task_id: int, db: Session = Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id).first()
+    if db_task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    db_task.completed = not db_task.completed
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+# Mount static files at the root (must be defined after all API routes)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

@@ -69,3 +69,52 @@ def test_read_task():
     read_response = client.get(f"/tasks/{task_id}")
     assert read_response.status_code == 200
     assert read_response.json()["title"] == "Test Task 2"
+
+def test_update_task():
+    create_response = client.post(
+        "/tasks/",
+        json={"title": "Task to update"}
+    )
+    task_id = create_response.json()["id"]
+
+    update_response = client.put(
+        f"/tasks/{task_id}",
+        json={"title": "Updated Task", "description": "Updated description"}
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["title"] == "Updated Task"
+    assert update_response.json()["description"] == "Updated description"
+
+def test_delete_task():
+    create_response = client.post(
+        "/tasks/",
+        json={"title": "Task to delete"}
+    )
+    task_id = create_response.json()["id"]
+
+    delete_response = client.delete(f"/tasks/{task_id}")
+    assert delete_response.status_code == 200
+
+    read_response = client.get(f"/tasks/{task_id}")
+    assert read_response.status_code == 404
+
+def test_toggle_task():
+    create_response = client.post(
+        "/tasks/",
+        json={"title": "Task to toggle"}
+    )
+    task_id = create_response.json()["id"]
+    assert create_response.json()["completed"] is False
+
+    toggle_response = client.patch(f"/tasks/{task_id}/toggle")
+    assert toggle_response.status_code == 200
+    assert toggle_response.json()["completed"] is True
+
+    toggle_response_2 = client.patch(f"/tasks/{task_id}/toggle")
+    assert toggle_response_2.status_code == 200
+    assert toggle_response_2.json()["completed"] is False
+
+def test_read_nonexistent_task():
+    response = client.get("/tasks/999999")
+    assert response.status_code == 404
+
