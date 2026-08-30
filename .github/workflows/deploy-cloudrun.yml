@@ -1,6 +1,7 @@
 name: Deploy to Google Cloud Run
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   # You could also use workflow_run to trigger this ONLY after docker-publish completes
@@ -49,4 +50,5 @@ jobs:
             --allow-unauthenticated
 
       - name: Show Output URL
-        run: echo "Deployed Service URL: ${{ steps.deploy.outputs.url }}"
+        run: |
+          echo "Deployed Service URL: ${{ steps.deploy.outputs.url }}"
