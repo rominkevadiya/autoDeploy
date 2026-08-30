@@ -33,11 +33,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          # Use Workload Identity Federation (recommended) or Service Account JSON key
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          # Uncomment the line below if you are using a JSON key instead of WIF:
-          # credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Deploy to Cloud Run
         id: deploy
