@@ -1287,20 +1287,28 @@ It securely logs into the GitHub Container Registry (GHCR), builds a fresh Docke
 
 You can pull the latest built Docker image from the registry directly.
 
-## Production Deployment (Google Cloud)
-The API is configured to be automatically deployed to **Google Cloud Run** with a **Google Cloud SQL (PostgreSQL)** database.
+## Production Deployment (100% Free Stack)
+The API is configured to be automatically deployed to **Google Cloud Run** using a completely free PostgreSQL database hosted on **Neon.tech**.
 
-To enable this:
-1. Create a Google Cloud Project and enable the Cloud Run and Cloud SQL APIs.
-2. Provision a Cloud SQL instance and a PostgreSQL database.
-3. Configure a GCP Service Account with `Cloud Run Admin` and `Service Account User` roles.
-4. Set the following secrets in your GitHub Repository:
-   - `GCP_PROJECT_ID`: Your GCP Project ID.
-   - `GCP_SERVICE_ACCOUNT`: The email of your service account.
-   - `GCP_WORKLOAD_IDENTITY_PROVIDER`: Your Workload Identity Provider string (or use `GCP_CREDENTIALS` for a JSON key).
-   - `DATABASE_URL`: The production connection string to your Cloud SQL instance.
+### Step 1: Create the Free Database (Neon)
+1. Go to [Neon.tech](https://neon.tech/) and sign up for a free account.
+2. Create a new project and select PostgreSQL 16 (or higher).
+3. Once created, copy the **Connection String** from the dashboard. It will look like this: `postgresql://[user]:[password]@[host]/[dbname]?sslmode=require`.
 
-Once configured, the `Deploy to Google Cloud Run` workflow (`.github/workflows/deploy-cloudrun.yml`) handles pushing updates instantly.
+### Step 2: Prepare Google Cloud (API Hosting)
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create a new project. Note your **Project ID**.
+2. Search for **Cloud Run API** and click **Enable**.
+3. Search for **Service Accounts** and create a new one named `github-actions-deployer`.
+4. Grant this Service Account the **Cloud Run Admin** and **Service Account User** roles.
+5. Create a **JSON key** for this Service Account and download it to your computer.
+
+### Step 3: Configure GitHub Secrets
+Go to your GitHub repository **Settings -> Secrets and variables -> Actions**, and add the following:
+- `GCP_PROJECT_ID`: Your GCP Project ID.
+- `GCP_CREDENTIALS`: Paste the entire contents of the downloaded JSON key file.
+- `DATABASE_URL`: Paste the Connection String you copied from Neon.tech in Step 1.
+
+Once configured, the `Deploy to Google Cloud Run` workflow (`.github/workflows/deploy-cloudrun.yml`) will automatically trigger on pushes to `main` and deploy your API live to the internet!
 
 ## Monitoring
-Since the application runs on Google Cloud Run and Cloud SQL, logging, metrics, and health monitoring are automatically handled by **Google Cloud Operations Suite** (formerly Stackdriver) out of the box. No external agents or sidecars are required.
+Since the application runs on Google Cloud Run, logging, metrics, and uptime monitoring are automatically handled by the built-in **Google Cloud Operations Suite** (formerly Stackdriver) out of the box. No external agents or sidecars are required.
