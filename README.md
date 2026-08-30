@@ -18,10 +18,7 @@ The project demonstrates how to build, test, migrate, containerize, and run a Py
 | PostgreSQL 18 container | Complete |
 | Docker healthcheck | Complete |
 | Persistent Docker volume | Complete |
-| CI/CD | Complete |
-| Container registry | Complete |
-| Production deployment | Complete |
-| Monitoring | Complete |
+| Continuous Integration | Complete |
 
 ---
 
