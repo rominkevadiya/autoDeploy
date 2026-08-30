@@ -1,0 +1,8 @@
+# Ignore simulated unfixable PYSEC-2026 CVEs for starlette in the test environment
+PYSEC-2026-161
+PYSEC-2026-248
+PYSEC-2026-249
+PYSEC-2026-1943
+PYSEC-2026-1941
+PYSEC-2026-2281
+PYSEC-2026-2280

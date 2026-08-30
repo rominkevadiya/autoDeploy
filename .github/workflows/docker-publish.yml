@@ -61,6 +61,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          trivyignores: '.trivyignore'
 
       # BUILD 2: Re-build and Push to GHCR with SBOM and Provenance
       # This step is near-instant due to Buildx caching (type=gha)
