@@ -1327,6 +1327,7 @@ The API is configured to be automatically deployed to **Google Cloud Run** using
      --workload-identity-pool="github" \
      --display-name="My GitHub repo Provider" \
      --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+     --attribute-condition="assertion.repository == '${REPO}'" \
      --issuer-uri="https://token.actions.githubusercontent.com"
    
    # Allow your GitHub repo to impersonate the Service Account
