@@ -1298,14 +1298,26 @@ The API is configured to be automatically deployed to **Google Cloud Run** using
 ### Step 2: Prepare Google Cloud (API Hosting)
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create a new project. Note your **Project ID**.
 2. Search for **Cloud Run API** and click **Enable**.
-3. Search for **Service Accounts** and create a new one named `github-actions-deployer`.
-4. Grant this Service Account the **Cloud Run Admin** and **Service Account User** roles.
-5. Create a **JSON key** for this Service Account and download it to your computer.
+3. Open the **Google Cloud Shell** (the `>_` terminal icon in the top right corner of the Google Cloud console).
+4. Run the following command in the Cloud Shell, replacing `YOUR_PROJECT_ID` with your actual project ID, and `rominkevadiya/autoDeploy` with your GitHub repo:
+   ```bash
+   # Set your variables
+   export PROJECT_ID="YOUR_PROJECT_ID"
+   export REPO="rominkevadiya/autoDeploy"
+   
+   # Run the automated setup script
+   curl -fsSL https://raw.githubusercontent.com/google-github-actions/auth/main/setup.sh | bash -s -- \
+     --project_id="${PROJECT_ID}" \
+     --service_account_id="github-actions-deployer" \
+     --service_account_roles="roles/run.admin,roles/iam.serviceAccountUser" \
+     --repo="${REPO}"
+   ```
+5. When the script finishes, it will print out two values in green text: your **Service Account Email** and your **Workload Identity Provider**. Copy both of these.
 
 ### Step 3: Configure GitHub Secrets
-Go to your GitHub repository **Settings -> Secrets and variables -> Actions**, and add the following:
-- `GCP_PROJECT_ID`: Your GCP Project ID.
-- `GCP_CREDENTIALS`: Paste the entire contents of the downloaded JSON key file.
+Go to your GitHub repository **Settings -> Secrets and variables -> Actions**, and add the following three secrets:
+- `GCP_SERVICE_ACCOUNT`: Paste the Service Account Email the script outputted.
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`: Paste the Workload Identity Provider string the script outputted.
 - `DATABASE_URL`: Paste the Connection String you copied from Neon.tech in Step 1.
 
 Once configured, the `Deploy to Google Cloud Run` workflow (`.github/workflows/deploy-cloudrun.yml`) will automatically trigger on pushes to `main` and deploy your API live to the internet!
