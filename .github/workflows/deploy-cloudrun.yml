@@ -1,0 +1,55 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+  # You could also use workflow_run to trigger this ONLY after docker-publish completes
+  workflow_run:
+    workflows: ["Docker Publish"]
+    types:
+      - completed
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE: autodeploy-api
+  REGION: us-central1
+  # Utilizing the GHCR image created by our other workflow
+  IMAGE: ghcr.io/${{ github.repository }}:latest
+
+jobs:
+  deploy:
+    # Only run if the previous workflow (Docker Publish) succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          # Use Workload Identity Federation (recommended) or Service Account JSON key
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          # Uncomment the line below if you are using a JSON key instead of WIF:
+          # credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}
+          env_vars: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+          flags: |
+            --allow-unauthenticated
+
+      - name: Show Output URL
+        run: echo "Deployed Service URL: ${{ steps.deploy.outputs.url }}"
