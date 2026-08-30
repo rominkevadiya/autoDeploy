@@ -48,6 +48,7 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
           flags: |
             --allow-unauthenticated
+            --port 8000
 
       - name: Show Output URL
         run: |
