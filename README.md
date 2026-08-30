@@ -22,7 +22,25 @@
 - **Glassmorphism UI:** A sleek, vanilla JS/HTML/CSS frontend for managing tasks.
 - **Dockerized:** Fully containerized development environment using Docker Compose.
 - **Continuous Integration (CI):** Automated `pytest` execution via GitHub Actions.
-- **Automated Docker Publishing (CD):** Automatic image builds and pushes to GitHub Container Registry (GHCR) upon successful CI.
+- **Security Scanning:** Automated Bandit (SAST), pip-audit (Dependencies), and Gitleaks checks.
+- **Automated Docker Publishing (CD):** Image builds, Trivy container scanning, and GHCR publishing.
+
+### 📊 Project Status
+
+| Phase | Component | Status |
+|---|---|---|
+| 1 | FastAPI Application | Complete |
+| 1 | PostgreSQL / SQLAlchemy | Complete |
+| 3 | Alembic Migrations | Complete |
+| 2 | Docker & Docker Compose | Complete |
+| 4 | GitHub Actions CI | Complete |
+| 5 | Docker Image Publishing | Complete |
+| 5 | GHCR | Complete |
+| 6 | Security Scanning | Complete |
+| 7 | CI/CD Hardening | Complete |
+| 7 | SBOM | Complete |
+| 7 | Image Provenance | Complete |
+| 8 | Cloud Deployment | Deferred |
 
 ---
 
@@ -136,27 +154,84 @@ After a **successful** CI Test run on the `main` branch:
 ```text
 Developer
     |
-    | git push main
     v
 GitHub
     |
     v
-CI Test (pytest)
-    |
-    +---- FAIL ----> STOP (No image published)
+Pull Request / Push
     |
     v
-PASS
+CI + Security
     |
+    +-- pytest
+    +-- Bandit
+    +-- pip-audit
+    +-- Gitleaks
+    |
+    | PASS
     v
 Docker Build
     |
+    +-- Metadata
+    +-- SBOM
+    +-- Provenance
+    |
+    v
+Trivy
+    |
+    | PASS
     v
 GHCR
     |
-    v
-Published Docker Image
+    +-- latest
+    +-- sha-<commit>
 ```
+
+---
+
+## 🛡️ Phase 6: Automated Security & Supply-Chain Scanning
+
+This project enforces a rigorous, **zero-cost** security pipeline using open-source tools prior to Docker publication.
+
+- **Bandit (SAST):** Scans the Python source code (`app/`, `tests/`) for security vulnerabilities.
+- **pip-audit:** Scans the `requirements.txt` dependency tree for known CVEs.
+- **Gitleaks:** Scans for accidentally committed secrets, `.env` files, or tokens.
+- **Trivy Container Scan:** Evaluates the built Docker container for OS and library vulnerabilities. 
+
+**Vulnerability Severity Policy:**
+- `CRITICAL` or `HIGH` vulnerabilities with available fixes will immediately **Block publication**.
+- `MEDIUM` and `LOW` vulnerabilities are **Reported** in the Action logs.
+
+---
+
+## 🔒 Phase 7: CI/CD Hardening, SBOM & Artifact Integrity
+
+This phase hardens the CI/CD pipeline with advanced supply-chain security metadata, all built on free open-source tools:
+
+- **Least-Privilege Permissions:** GitHub Action workflows strictly enforce `permissions: contents: read` (and `packages: write` for publishing) to minimize the attack surface.
+- **Immutable SHA Tags:** Images are tagged with `sha-<commit>` (e.g. `ghcr.io/username/autodeploy:sha-abc1234`). This permanently maps a published artifact back to the exact Git commit that produced it. The `latest` tag remains purely as a convenience pointer.
+- **SBOM (Software Bill of Materials):** We natively generate and attach an SBOM via Docker Buildx. It is a package list that answers exactly *"Which software components and versions are actually inside this image?"*, crucial for vulnerability management and supply-chain transparency.
+- **Build Provenance:** We utilize BuildKit attestations. Provenance answers *"Where did this image come from?"* by cryptographically proving it was built from this specific GitHub repository, commit, and CI workflow run.
+- **Dual-Build Security Strategy:** To enforce the rule that no image is pushed before it is scanned by Trivy, we use a dual-build strategy. The first build is loaded into the local runner and scanned. If it passes, a near-instantaneous second build (leveraging `cache-from: type=gha`) generates the final attestations and pushes to GHCR.
+- **Docker Metadata:** Extensive OCI labels (revision, created, source) are injected into the final image.
+
+### Recommended Branch Protection & Pull Requests
+For true supply-chain security, the following branch protection is **recommended** (not automatically enabled by code):
+- Require Pull Requests before merging to `main`.
+- **Require Status Checks to Pass:** The `CI Test` workflow (Pytest + Bandit + Gitleaks + pip-audit) must run and pass on all Pull Requests.
+- **Docker Isolation:** Notice that the `Docker Publish` workflow is strictly gated. It does *not* run on Pull Requests. Images are only built and pushed to GHCR after a trusted merge to the `main` branch.
+
+---
+
+## 🚫 Phase 8: Production Deployment — Deferred
+
+Cloud deployment (Google Cloud Run + Cloud SQL) has been **intentionally deferred**. 
+
+This project currently has a **strict zero-billing requirement**. Therefore:
+- No GCP resources (Cloud SQL, Cloud Run, Secret Manager) are required to run this project.
+- No billing account is required for the current development and CI/CD setup.
+- The project is fully functional locally via Docker Compose and automatically tested/built via GitHub Actions without incurring any cloud costs.
+- Future phases involving production deployment will only be implemented if a zero-cost tier can be guaranteed or when a billing requirement is acceptable.
 
 ---
 

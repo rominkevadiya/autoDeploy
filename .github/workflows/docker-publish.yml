@@ -8,13 +8,14 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Checkout repository
@@ -39,10 +40,37 @@ jobs:
             type=sha,format=long
             type=raw,value=latest
 
-      - name: Build and push Docker image
+      # BUILD 1: Build and load into local Docker daemon for Trivy scanning
+      - name: Build Docker image (Local Load)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # SECURITY GATE: Trivy Image Scan (Blocks if CRITICAL/HIGH are found)
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ github.repository }}:latest
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # BUILD 2: Re-build and Push to GHCR with SBOM and Provenance
+      # This step is near-instant due to Buildx caching (type=gha)
+      - name: Build, Attest, and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          provenance: mode=max
+          sbom: true
