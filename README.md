@@ -1305,14 +1305,42 @@ The API is configured to be automatically deployed to **Google Cloud Run** using
    export PROJECT_ID="YOUR_PROJECT_ID"
    export REPO="rominkevadiya/autoDeploy"
    
-   # Run the automated setup script
-   curl -fsSL https://raw.githubusercontent.com/google-github-actions/auth/main/setup.sh | bash -s -- \
-     --project_id="${PROJECT_ID}" \
-     --service_account_id="github-actions-deployer" \
-     --service_account_roles="roles/run.admin,roles/iam.serviceAccountUser" \
-     --repo="${REPO}"
+   # Enable the required API
+   gcloud services enable iamcredentials.googleapis.com --project="${PROJECT_ID}"
+   
+   # Create the Workload Identity Pool
+   gcloud iam workload-identity-pools create "github" \
+     --project="${PROJECT_ID}" \
+     --location="global" \
+     --display-name="GitHub Actions Pool"
+   
+   # Get the Pool ID
+   export WORKLOAD_IDENTITY_POOL_ID=$(gcloud iam workload-identity-pools describe "github" \
+     --project="${PROJECT_ID}" \
+     --location="global" \
+     --format="value(name)")
+   
+   # Create the Identity Provider
+   gcloud iam workload-identity-pools providers create-oidc "my-repo" \
+     --project="${PROJECT_ID}" \
+     --location="global" \
+     --workload-identity-pool="github" \
+     --display-name="My GitHub repo Provider" \
+     --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+     --issuer-uri="https://token.actions.githubusercontent.com"
+   
+   # Allow your GitHub repo to impersonate the Service Account
+   gcloud iam service-accounts add-iam-policy-binding "github-actions-deployer@${PROJECT_ID}.iam.gserviceaccount.com" \
+     --project="${PROJECT_ID}" \
+     --role="roles/iam.workloadIdentityUser" \
+     --member="principalSet://iam.googleapis.com/${WORKLOAD_IDENTITY_POOL_ID}/attribute.repository/${REPO}"
+   
+   # Print out the exact strings you need to copy!
+   echo -e "\n\n=== COPY THESE VALUES TO GITHUB SECRETS ==="
+   echo "GCP_SERVICE_ACCOUNT: github-actions-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
+   echo "GCP_WORKLOAD_IDENTITY_PROVIDER: ${WORKLOAD_IDENTITY_POOL_ID}/providers/my-repo"
    ```
-5. When the script finishes, it will print out two values in green text: your **Service Account Email** and your **Workload Identity Provider**. Copy both of these.
+5. When the script finishes, it will print out your two secrets. Copy both of them!
 
 ### Step 3: Configure GitHub Secrets
 Go to your GitHub repository **Settings -> Secrets and variables -> Actions**, and add the following three secrets:
