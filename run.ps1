@@ -1,6 +1,8 @@
 # Stop on errors
 $ErrorActionPreference = "Stop"
 
+# Fix emoji rendering in PowerShell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 # Copy .env.example to .env if .env doesn't exist
 if (-Not (Test-Path ".env")) {
     Write-Host "⚠️  .env file not found. Creating one from .env.example..." -ForegroundColor Yellow
