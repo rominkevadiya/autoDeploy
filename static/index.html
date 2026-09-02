@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taskflow | Modern Task Manager</title>
     <link rel="stylesheet" href="/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body>
     <div class="background-orbs">
@@ -18,22 +16,22 @@
     <div class="container">
         <header>
             <div class="logo">
-                <i class="ri-checkbox-circle-fill"></i>
+                <span class="logo-mark" aria-hidden="true">✓</span>
                 <h1>Taskflow</h1>
             </div>
             <p>Organize your work, effortlessly.</p>
         </header>
 
+        <div id="app-error" class="app-error hidden" role="alert"></div>
+
         <main>
             <div class="glass-card add-task-card">
                 <form id="task-form">
                     <div class="input-group">
-                        <input type="text" id="task-title" placeholder="What needs to be done?" required autocomplete="off">
-                        <input type="text" id="task-desc" placeholder="Details (optional)" autocomplete="off">
+                        <input type="text" id="task-title" placeholder="What needs to be done?" required autocomplete="off" maxlength="200">
+                        <input type="text" id="task-desc" placeholder="Details (optional)" autocomplete="off" maxlength="2000">
                     </div>
-                    <button type="submit" class="primary-btn">
-                        <i class="ri-add-line"></i> Add Task
-                    </button>
+                    <button type="submit" class="primary-btn">Add Task</button>
                 </form>
             </div>
 
@@ -42,11 +40,10 @@
                     <h2>Your Tasks</h2>
                     <span id="task-count" class="badge">0</span>
                 </div>
-                
+                <p id="page-note" class="page-note hidden">Showing the first 50 tasks.</p>
+
                 <div id="tasks-list" class="tasks-list">
-                    <!-- Tasks will be injected here via JS -->
                     <div class="empty-state hidden" id="empty-state">
-                        <i class="ri-inbox-line"></i>
                         <p>No tasks yet. Add one above!</p>
                     </div>
                 </div>

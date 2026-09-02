@@ -1,14 +1,17 @@
 services:
   db:
     image: postgres:18
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql
-    ports:
-      - "5432:5432"
+    # Postgres stays on the Compose network only.
+    # Uncomment to inspect the database from the host:
+    # ports:
+    #   - "5432:5432"
     networks:
       - autodeploy_network
     healthcheck:
@@ -19,6 +22,7 @@ services:
 
   api:
     build: .
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:

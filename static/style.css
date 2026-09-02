@@ -14,7 +14,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Outfit', sans-serif;
+    font-family: system-ui, "Segoe UI", sans-serif;
 }
 
 body {
@@ -100,9 +100,25 @@ header {
     margin-bottom: 0.5rem;
 }
 
-.logo i {
-    font-size: 2.5rem;
+.logo-mark {
+    font-size: 2rem;
     color: var(--accent);
+    font-weight: 700;
+}
+
+.app-error {
+    margin-bottom: 1.5rem;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fecaca;
+}
+
+.page-note {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: -0.75rem 0 1rem 0.5rem;
 }
 
 .logo h1 {
@@ -259,18 +275,54 @@ input::placeholder {
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s;
-    color: transparent;
+    background: transparent;
+    flex-shrink: 0;
 }
 
 .task-item.completed .task-checkbox {
     background: var(--success);
     border-color: var(--success);
+}
+
+.task-item.completed .task-checkbox::after {
+    content: "✓";
     color: white;
+    font-size: 0.85rem;
 }
 
 .task-text {
     display: flex;
     flex-direction: column;
+    flex: 1;
+}
+
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.edit-actions,
+.task-actions {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.text-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+}
+
+.text-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .task-title {
@@ -294,9 +346,9 @@ input::placeholder {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-size: 1.25rem;
+    font-size: 0.9rem;
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 0.35rem 0.5rem;
     border-radius: 8px;
     transition: all 0.2s;
 }

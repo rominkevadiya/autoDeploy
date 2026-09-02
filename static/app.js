@@ -1,4 +1,4 @@
-const API_URL = ''; // Since frontend is served by FastAPI, relative path is fine
+const PAGE_LIMIT = 50;
 
 document.addEventListener('DOMContentLoaded', () => {
     const taskForm = document.getElementById('task-form');
@@ -7,22 +7,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const tasksList = document.getElementById('tasks-list');
     const taskCount = document.getElementById('task-count');
     const emptyState = document.getElementById('empty-state');
+    const errorBanner = document.getElementById('app-error');
+    const pageNote = document.getElementById('page-note');
 
-    // Fetch and display tasks on load
     fetchTasks();
 
-    // Handle form submission
     taskForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const title = taskTitleInput.value.trim();
         const description = taskDescInput.value.trim();
-        
+
         if (!title) return;
 
         const submitBtn = taskForm.querySelector('button');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Adding...';
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Adding...';
         submitBtn.disabled = true;
 
         try {
@@ -31,40 +31,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ title, description })
+                body: JSON.stringify({ title, description: description || null })
             });
 
             if (response.ok) {
+                clearError();
                 taskTitleInput.value = '';
                 taskDescInput.value = '';
                 fetchTasks();
+            } else {
+                showError(await errorMessage(response, 'Could not add task.'));
             }
         } catch (error) {
-            console.error('Error adding task:', error);
+            showError('Could not reach the server. Try again.');
         } finally {
-            submitBtn.innerHTML = originalText;
+            submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         }
     });
 
-    // Fetch all tasks from backend
     async function fetchTasks() {
         try {
-            const response = await fetch('/tasks/');
+            const response = await fetch(`/tasks/?skip=0&limit=${PAGE_LIMIT}`);
+            if (!response.ok) {
+                showError(await errorMessage(response, 'Could not load tasks.'));
+                return;
+            }
             const tasks = await response.json();
+            clearError();
             renderTasks(tasks);
         } catch (error) {
-            console.error('Error fetching tasks:', error);
+            showError('Could not load tasks. Check that the API is running.');
         }
     }
 
-    // Render tasks to the DOM
     function renderTasks(tasks) {
-        // Clear current tasks (except empty state)
         const taskElements = tasksList.querySelectorAll('.task-item');
         taskElements.forEach(el => el.remove());
 
         taskCount.textContent = tasks.length;
+        pageNote.classList.toggle('hidden', tasks.length < PAGE_LIMIT);
 
         if (tasks.length === 0) {
             emptyState.classList.remove('hidden');
@@ -73,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         emptyState.classList.add('hidden');
 
-        // Sort: incomplete first, then sort by ID descending
         tasks.sort((a, b) => {
             if (a.completed === b.completed) return b.id - a.id;
             return a.completed ? 1 : -1;
@@ -82,59 +87,129 @@ document.addEventListener('DOMContentLoaded', () => {
         tasks.forEach(task => {
             const taskEl = document.createElement('div');
             taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
-            taskEl.dataset.id = task.id;
-            
+            taskEl.dataset.id = String(task.id);
+
+            const title = escapeHTML(task.title);
+            const description = task.description ? escapeHTML(task.description) : '';
+
             taskEl.innerHTML = `
                 <div class="task-content">
-                    <div class="task-checkbox" onclick="toggleTask(${task.id}, ${task.completed})">
-                        <i class="ri-check-line"></i>
+                    <button type="button" class="task-checkbox" data-action="toggle" aria-label="Toggle complete"></button>
+                    <div class="task-text" data-view>
+                        <div class="task-title">${title}</div>
+                        ${description ? `<div class="task-desc">${description}</div>` : ''}
                     </div>
-                    <div class="task-text">
-                        <div class="task-title">${escapeHTML(task.title)}</div>
-                        ${task.description ? `<div class="task-desc">${escapeHTML(task.description)}</div>` : ''}
-                    </div>
+                    <form class="edit-form hidden" data-edit>
+                        <input type="text" name="title" value="${title}" maxlength="200" required>
+                        <input type="text" name="description" value="${description}" maxlength="2000" placeholder="Details (optional)">
+                        <div class="edit-actions">
+                            <button type="submit" class="text-btn">Save</button>
+                            <button type="button" class="text-btn" data-action="cancel-edit">Cancel</button>
+                        </div>
+                    </form>
                 </div>
-                <button class="delete-btn" onclick="deleteTask(${task.id})">
-                    <i class="ri-delete-bin-line"></i>
-                </button>
+                <div class="task-actions">
+                    <button type="button" class="text-btn" data-action="edit">Edit</button>
+                    <button type="button" class="delete-btn" data-action="delete" aria-label="Delete task">Delete</button>
+                </div>
             `;
-            
+
+            const view = taskEl.querySelector('[data-view]');
+            const editForm = taskEl.querySelector('[data-edit]');
+
+            taskEl.querySelector('[data-action="toggle"]').addEventListener('click', () => toggleTask(task.id));
+            taskEl.querySelector('[data-action="delete"]').addEventListener('click', () => deleteTask(task.id));
+            taskEl.querySelector('[data-action="edit"]').addEventListener('click', () => {
+                view.classList.add('hidden');
+                editForm.classList.remove('hidden');
+            });
+            taskEl.querySelector('[data-action="cancel-edit"]').addEventListener('click', () => {
+                editForm.reset();
+                editForm.classList.add('hidden');
+                view.classList.remove('hidden');
+            });
+            editForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formData = new FormData(editForm);
+                await updateTask(task.id, {
+                    title: String(formData.get('title') || '').trim(),
+                    description: String(formData.get('description') || '').trim() || null,
+                    completed: task.completed,
+                });
+            });
+
             tasksList.appendChild(taskEl);
         });
     }
 
-    // Expose functions to global scope for onclick attributes
-    window.toggleTask = async (id, currentStatus) => {
+    async function toggleTask(id) {
         try {
-            const response = await fetch(`/tasks/${id}/toggle`, {
-                method: 'PATCH'
-            });
-            
+            const response = await fetch(`/tasks/${id}/toggle`, { method: 'PATCH' });
             if (response.ok) {
+                clearError();
                 fetchTasks();
+            } else {
+                showError(await errorMessage(response, 'Could not update task.'));
             }
         } catch (error) {
-            console.error('Error toggling task:', error);
+            showError('Could not update task.');
         }
-    };
+    }
 
-    window.deleteTask = async (id) => {
+    async function deleteTask(id) {
+        try {
+            const response = await fetch(`/tasks/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                clearError();
+                fetchTasks();
+            } else {
+                showError(await errorMessage(response, 'Could not delete task.'));
+            }
+        } catch (error) {
+            showError('Could not delete task.');
+        }
+    }
+
+    async function updateTask(id, payload) {
         try {
             const response = await fetch(`/tasks/${id}`, {
-                method: 'DELETE'
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
-            
             if (response.ok) {
+                clearError();
                 fetchTasks();
+            } else {
+                showError(await errorMessage(response, 'Could not save task.'));
             }
         } catch (error) {
-            console.error('Error deleting task:', error);
+            showError('Could not save task.');
         }
-    };
+    }
 
-    // Helper to prevent XSS
+    function showError(message) {
+        errorBanner.textContent = message;
+        errorBanner.classList.remove('hidden');
+    }
+
+    function clearError() {
+        errorBanner.textContent = '';
+        errorBanner.classList.add('hidden');
+    }
+
+    async function errorMessage(response, fallback) {
+        try {
+            const data = await response.json();
+            if (typeof data.detail === 'string') return data.detail;
+        } catch (error) {
+            // body was not JSON
+        }
+        return fallback;
+    }
+
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, 
+        return str.replace(/[&<>'"]/g,
             tag => ({
                 '&': '&amp;',
                 '<': '&lt;',

@@ -92,6 +92,8 @@ Docker Compose will automatically:
 ### 4. Access the Application
 - **Frontend UI:** [http://localhost:8000](http://localhost:8000)
 - **API Interactive Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Liveness:** [http://localhost:8000/live](http://localhost:8000/live) (process up; no database check)
+- **Readiness:** [http://localhost:8000/ready](http://localhost:8000/ready) (503 if PostgreSQL is down)
 
 ---
 
@@ -110,7 +112,7 @@ docker compose down
 # Rebuild the API image manually
 docker build -t autodeploy-api:test .
 
-# Connect directly to the PostgreSQL database shell
+# Connect to PostgreSQL inside the Compose network
 docker compose exec db psql -U autodeploy -d autodeploy
 ```
 
@@ -118,11 +120,18 @@ docker compose exec db psql -U autodeploy -d autodeploy
 
 ## 🧪 Testing
 
-The project uses `pytest` with an isolated, in-memory SQLite database to ensure tests are fast, clean, and do not mutate your local PostgreSQL data.
+The runtime image does **not** include pytest. Install the dev extras on the host:
 
-To run the test suite locally inside the Docker container:
 ```bash
-docker compose exec api pytest
+python -m pip install -r requirements-dev.txt
+pytest
+```
+
+Local runs use an isolated in-memory SQLite database (they ignore your Compose Postgres data). CI runs the same suite against **PostgreSQL 18**. To mimic CI (PowerShell):
+
+```powershell
+$env:TEST_DATABASE_URL="postgresql+psycopg://autodeploy:testpass@localhost:5432/autodeploy_test"
+pytest
 ```
 
 ---
@@ -133,9 +142,10 @@ This project strictly enforces **Phase 4 CI** quality gates using GitHub Actions
 
 Whenever code is pushed to the `main` branch or a Pull Request is opened:
 1. GitHub Actions checks out the code.
-2. Sets up Python 3.12 and installs `requirements.txt`.
-3. Runs the `pytest` suite.
-4. If **any** test fails, the pipeline immediately halts and marks the commit as failed.
+2. Sets up Python 3.12 and installs `requirements-dev.txt`.
+3. Starts a PostgreSQL 18 service and runs `pytest` against it.
+4. A parallel job runs Bandit, pip-audit (no blanket CVE ignores), and Gitleaks.
+5. If **any** required job fails, the pipeline marks the commit as failed.
 
 ---
 
@@ -215,11 +225,17 @@ This phase hardens the CI/CD pipeline with advanced supply-chain security metada
 - **Dual-Build Security Strategy:** To enforce the rule that no image is pushed before it is scanned by Trivy, we use a dual-build strategy. The first build is loaded into the local runner and scanned. If it passes, a near-instantaneous second build (leveraging `cache-from: type=gha`) generates the final attestations and pushes to GHCR.
 - **Docker Metadata:** Extensive OCI labels (revision, created, source) are injected into the final image.
 
-### Recommended Branch Protection & Pull Requests
-For true supply-chain security, the following branch protection is **recommended** (not automatically enabled by code):
-- Require Pull Requests before merging to `main`.
-- **Require Status Checks to Pass:** The `CI Test` workflow (Pytest + Bandit + Gitleaks + pip-audit) must run and pass on all Pull Requests.
-- **Docker Isolation:** Notice that the `Docker Publish` workflow is strictly gated. It does *not* run on Pull Requests. Images are only built and pushed to GHCR after a trusted merge to the `main` branch.
+### Branch Protection (required for a trustworthy publish gate)
+
+Workflow files cannot turn this on. A repository admin must set it in **Settings → Branches → Branch protection rules** for `main`:
+
+- Do not allow direct pushes; require a pull request before merging.
+- Require status checks to pass: `test` and `security` from the **CI Test** workflow (`CI Test / test`, `CI Test / security`).
+- Do not allow bypassing these checks for administrators if you can avoid it.
+
+Until those rules exist, anyone who can push `main` can publish to GHCR after CI succeeds.
+
+**Docker Isolation:** The `Docker Publish` workflow does *not* run on pull requests. Images are only built and pushed after a successful CI run on `main`.
 
 ---
 

@@ -1,15 +1,2 @@
-# Ignore simulated unfixable PYSEC-2026 CVEs for starlette in the test environment (pip-audit)
-PYSEC-2026-161
-PYSEC-2026-248
-PYSEC-2026-249
-PYSEC-2026-1943
-PYSEC-2026-1941
-PYSEC-2026-2281
-PYSEC-2026-2280
-
-# Trivy-specific CVE IDs for the same/related simulated vulnerabilities
-CVE-2025-47273
-GHSA-6v7p-g79w-8964
-CVE-2024-47874
-CVE-2026-48818
-CVE-2026-54283
+# Documented Trivy exceptions only. Add a CVE ID here with a comment
+# explaining why it cannot be fixed yet. Currently none.
