@@ -144,3 +144,4 @@ Thumbs.db
 temp.db
 *.sqlite3
 alembic.ini.bak
+*.session.sql
