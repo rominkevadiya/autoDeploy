@@ -65,7 +65,8 @@ def test_create_task_rejects_long_title(client):
 def test_read_tasks_isolated(client):
     response = client.get("/tasks/")
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["items"] == []
+    assert response.json()["total"] == 0
 
 
 def test_read_task(client):
@@ -131,7 +132,8 @@ def test_pagination_limit(client, db_session: Session):
 
     response = client.get("/tasks/?skip=0&limit=2")
     assert response.status_code == 200
-    assert len(response.json()) == 2
+    assert len(response.json()["items"]) == 2
+    assert response.json()["total"] == 3
 
     over_max = client.get("/tasks/?limit=51")
     assert over_max.status_code == 422

@@ -67,6 +67,13 @@ class TaskResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PaginatedTasksResponse(BaseModel):
+    total: int
+    skip: int
+    limit: int
+    items: list[TaskResponse]
+
+
 def _check_database(db: Session) -> None:
     try:
         db.execute(text("SELECT 1"))
@@ -103,13 +110,15 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
     return db_task
 
 
-@app.get("/tasks/", response_model=list[TaskResponse])
+@app.get("/tasks/", response_model=PaginatedTasksResponse)
 def read_tasks(
     skip: int = Query(0, ge=0),
     limit: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     db: Session = Depends(get_db),
 ):
-    return db.query(Task).offset(skip).limit(limit).all()
+    total = db.query(Task).count()
+    items = db.query(Task).offset(skip).limit(limit).all()
+    return {"total": total, "skip": skip, "limit": limit, "items": items}
 
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse)

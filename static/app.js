@@ -57,19 +57,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 showError(await errorMessage(response, 'Could not load tasks.'));
                 return;
             }
-            const tasks = await response.json();
+            const data = await response.json();
             clearError();
-            renderTasks(tasks);
+            renderTasks(data.items, data.total);
         } catch (error) {
             showError('Could not load tasks. Check that the API is running.');
         }
     }
 
-    function renderTasks(tasks) {
+    function renderTasks(tasks, total) {
         const taskElements = tasksList.querySelectorAll('.task-item');
         taskElements.forEach(el => el.remove());
 
-        taskCount.textContent = tasks.length;
+        taskCount.textContent = total;
         pageNote.classList.toggle('hidden', tasks.length < PAGE_LIMIT);
 
         if (tasks.length === 0) {
