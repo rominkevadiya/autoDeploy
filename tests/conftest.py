@@ -14,6 +14,7 @@ else:
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.task import Task  # noqa: E402
+from app.models.user import User  # noqa: E402
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
@@ -46,19 +47,36 @@ def db_session():
         yield session
     finally:
         session.query(Task).delete()
+        session.query(User).delete()
         session.commit()
         session.close()
 
 
+from app.main import get_current_user
+from app.security import get_password_hash
+
 @pytest.fixture()
-def client(db_session):
+def test_user(db_session):
+    user = User(username="testuser", email="test@example.com", hashed_password=get_password_hash("password"))
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture()
+def client(db_session, test_user):
     def override_get_db():
         try:
             yield db_session
         finally:
             pass
+            
+    def override_get_current_user():
+        return test_user
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()

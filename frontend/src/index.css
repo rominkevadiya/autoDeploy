@@ -226,13 +226,26 @@ input::placeholder {
     font-weight: 600;
 }
 
-.badge {
+.badge, .task-badge {
     background: rgba(99, 102, 241, 0.2);
     color: var(--accent);
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+}
+
+.task-date {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+}
+
+.task-date.overdue {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.2);
 }
 
 .tasks-list {

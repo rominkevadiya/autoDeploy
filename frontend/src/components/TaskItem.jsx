@@ -4,10 +4,19 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(task.title);
     const [editDesc, setEditDesc] = useState(task.description || '');
+    const [editCategory, setEditCategory] = useState(task.category || '');
+    const [editDueDate, setEditDueDate] = useState(task.due_date ? new Date(task.due_date).toISOString().slice(0, 16) : '');
 
     const handleSave = () => {
         if (!editTitle.trim()) return;
-        onEdit(task.id, { title: editTitle, description: editDesc });
+        const formattedDate = editDueDate ? new Date(editDueDate).toISOString() : null;
+        onEdit(task.id, { 
+            title: editTitle, 
+            description: editDesc,
+            category: editCategory || null,
+            due_date: formattedDate,
+            completed: task.completed
+        });
         setIsEditing(false);
     };
 
@@ -30,6 +39,20 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                             maxLength="2000"
                             placeholder="Details (optional)"
                         />
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <input 
+                                type="text" 
+                                value={editCategory} 
+                                onChange={(e) => setEditCategory(e.target.value)} 
+                                maxLength="50"
+                                placeholder="Category (e.g. Work)"
+                            />
+                            <input 
+                                type="datetime-local" 
+                                value={editDueDate} 
+                                onChange={(e) => setEditDueDate(e.target.value)} 
+                            />
+                        </div>
                     </div>
                     <div className="edit-actions">
                         <button className="text-btn" onClick={handleSave}>Save</button>
@@ -49,7 +72,17 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                     aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
                 />
                 <div className="task-text">
-                    <span className="task-title">{task.title}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span className="task-title">{task.title}</span>
+                        {task.category && (
+                            <span className="task-badge">{task.category}</span>
+                        )}
+                        {task.due_date && (
+                            <span className={`task-date ${new Date(task.due_date) < new Date() && !task.completed ? 'overdue' : ''}`}>
+                                🕒 {new Date(task.due_date).toLocaleString()}
+                            </span>
+                        )}
+                    </div>
                     {task.description && <span className="task-desc">{task.description}</span>}
                 </div>
             </div>

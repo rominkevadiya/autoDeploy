@@ -10,6 +10,42 @@ def test_liveness(client):
     assert response.json()["status"] == "live"
 
 
+def test_register_user(client):
+    response = client.post(
+        "/auth/register",
+        json={"username": "newuser", "email": "newuser@example.com", "password": "password"}
+    )
+    assert response.status_code == 201
+    assert response.json()["username"] == "newuser"
+
+
+def test_login_user(client):
+    client.post(
+        "/auth/register",
+        json={"username": "loginuser", "email": "loginuser@example.com", "password": "password"}
+    )
+    response = client.post(
+        "/auth/login",
+        data={"username": "loginuser", "password": "password"}
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+
+def test_rate_limit_auth(client):
+    # Auth endpoints are limited to 5/minute
+    # Since other tests might have consumed some of the limit for the test client's IP,
+    # we just send up to 10 requests and ensure at least one returns 429.
+    rate_limited = False
+    for _ in range(10):
+        response = client.post("/auth/login", data={"username": "user", "password": "pwd"})
+        if response.status_code == 429:
+            rate_limited = True
+            break
+    
+    assert rate_limited, "Rate limiter did not block excessive requests"
+
+
 def test_readiness_and_health(client):
     ready = client.get("/ready")
     assert ready.status_code == 200
@@ -44,11 +80,18 @@ def test_readiness_unhealthy(client):
 def test_create_task(client):
     response = client.post(
         "/tasks/",
-        json={"title": "Test Task", "description": "This is a test task"},
+        json={
+            "title": "Test Task", 
+            "description": "This is a test task",
+            "category": "Work",
+            "due_date": "2026-12-31T23:59:59Z"
+        },
     )
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == "Test Task"
+    assert data["category"] == "Work"
+    assert data["due_date"].startswith("2026-12-31T23:59:59")
     assert data["id"] is not None
 
 
@@ -88,12 +131,16 @@ def test_update_task(client):
             "title": "Updated Task",
             "description": "Updated description",
             "completed": True,
+            "category": "Personal",
+            "due_date": "2027-01-01T00:00:00Z"
         },
     )
     assert update_response.status_code == 200
     assert update_response.json()["title"] == "Updated Task"
     assert update_response.json()["description"] == "Updated description"
     assert update_response.json()["completed"] is True
+    assert update_response.json()["category"] == "Personal"
+    assert update_response.json()["due_date"].startswith("2027-01-01T00:00:00")
 
 
 def test_delete_task(client):

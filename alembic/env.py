@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.database import Base
 from app.models.task import Task
+from app.models.user import User
 from app.config import settings
 
 # Override the url in alembic.ini with the application's config

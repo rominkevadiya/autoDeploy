@@ -3,13 +3,18 @@ import React, { useState } from 'react';
 export default function TaskForm({ onAdd }) {
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
+    const [category, setCategory] = useState('');
+    const [dueDate, setDueDate] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!title.trim()) return;
-        onAdd(title, desc);
+        const formattedDate = dueDate ? new Date(dueDate).toISOString() : null;
+        onAdd(title, desc, category || null, formattedDate);
         setTitle('');
         setDesc('');
+        setCategory('');
+        setDueDate('');
     };
 
     return (
@@ -34,6 +39,20 @@ export default function TaskForm({ onAdd }) {
                         maxLength="2000"
                         value={desc}
                         onChange={(e) => setDesc(e.target.value)}
+                    />
+                </div>
+                <div className="input-group">
+                    <input 
+                        type="text" 
+                        placeholder="Category (e.g. Work)" 
+                        maxLength="50"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                    />
+                    <input 
+                        type="datetime-local" 
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
                     />
                 </div>
                 <button type="submit" className="primary-btn">Add Task</button>
